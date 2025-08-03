@@ -14,7 +14,7 @@ if [[ ! -d "${MY_DIR}" ]]; then MY_DIR="${PWD}"; fi
 
 ANDROID_ROOT="${MY_DIR}/../../.."
 
-HELPER="${ANDROID_ROOT}/tools/extract-utils/extract_utils.sh"
+HELPER="tools/extract-utils/extract_utils.sh"
 if [ ! -f "${HELPER}" ]; then
     echo "Unable to find helper script at ${HELPER}"
     exit 1
@@ -22,7 +22,10 @@ fi
 source "${HELPER}"
 
 # Initialize the helper for common
-setup_vendor "${DEVICE_COMMON}" "${VENDOR}" "${ANDROID_ROOT}" true
+# Use home directory for vendor files
+SAFE_ROOT="$HOME/android_safe"
+mkdir -p "${SAFE_ROOT}"
+setup_vendor "${DEVICE}" "${VENDOR}" "${SAFE_ROOT}" true "${CLEAN_VENDOR}"
 
 # Warning headers and guards
 write_headers "a21s"
@@ -30,6 +33,18 @@ write_headers "a21s"
 # The standard common blobs
 write_makefiles "${MY_DIR}/proprietary-files.txt" true
 
+# Finish
+write_footers
+
+if [ -s "${MY_DIR}/../${DEVICE}/proprietary-files.txt" ]; then
+    # Reinitialize the helper for device
+    setup_vendor "${DEVICE}" "${VENDOR}" "${ANDROID_ROOT}" false
+
+    # Warning headers and guards
+    write_headers
+
+    # The standard device blobs
+    write_makefiles "${MY_DIR}/../${DEVICE}/proprietary-files.txt" true
 # Finish
 write_footers
 
